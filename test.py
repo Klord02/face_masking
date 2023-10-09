@@ -107,8 +107,11 @@ def evaluate(respth="./res/test_res", dspth="./data", cp="pretrained_model.pth")
             img = img.cuda()
             out = net(img)[0]
             parsing = out.squeeze(0).cpu().numpy().argmax(0)
-            # print(parsing)
+
+            print(image_path)
+            print(parsing)
             print(np.unique(parsing))
+            print()
 
             vis_parsing_maps(
                 image,
