@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 import torchvision.transforms as transforms
 import cv2
+import shutil
 
 
 def vis_parsing_maps(
@@ -23,7 +24,7 @@ def vis_parsing_maps(
 ):
     # Colors for all 20 parts
     part_colors = [
-        [255, 0, 0],
+        [0, 0, 0],
         [255, 85, 0],
         [255, 170, 0],
         [255, 0, 85],
@@ -49,6 +50,31 @@ def vis_parsing_maps(
         [170, 255, 255],
     ]
 
+    atts = {
+        0: 'bg',
+        1: 'skin',
+        2: 'l_brow',
+        3: 'r_brow',
+        4: 'l_eye',
+        5: 'r_eye',
+        6: 'eye_g',
+        7: 'l_ear',
+        8: 'r_ear',
+        9: 'ear_r',
+        10: 'nose',
+        11: 'mouth',
+        12: 'u_lip',
+        13: 'l_lip',
+        14: 'neck',
+        15: 'neck_l',
+        16: 'cloth',
+        17: 'hair',
+        18: 'hat'
+    }
+
+
+    pixel_array = []
+
     im = np.array(im)
     vis_im = im.copy().astype(np.uint8)
     vis_parsing_anno = parsing_anno.copy().astype(np.uint8)
@@ -61,9 +87,29 @@ def vis_parsing_maps(
 
     num_of_class = np.max(vis_parsing_anno)
 
-    for pi in range(1, num_of_class + 1):
+    for pi in range(0, num_of_class + 1):
         index = np.where(vis_parsing_anno == pi)
         vis_parsing_anno_color[index[0], index[1], :] = part_colors[pi]
+
+        temp_img = (
+            np.zeros((vis_parsing_anno.shape[0], vis_parsing_anno.shape[1], 3))
+        )
+
+        temp_img[index[0], index[1], :] = part_colors[pi]
+        temp_img = temp_img.astype(np.uint8)
+        temp_img = cv2.addWeighted(
+            cv2.cvtColor(vis_im, cv2.COLOR_RGB2BGR), 0.4, temp_img, 0.6, 0
+        )
+        attr = atts[pi]
+        if save_im:
+            cv2.imwrite(save_path[:-4] + f"_{attr}.png", temp_img, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+
+        pixel_values = vis_im[index[0], index[1], :]
+        pixel_array.append(pixel_values)
+        print(pi, " : ")
+        print(pixel_values)
+        # print(np.shape(pixel_values))
+        print()
 
     vis_parsing_anno_color = vis_parsing_anno_color.astype(np.uint8)
     # print(vis_parsing_anno_color.shape, vis_im.shape)
@@ -76,13 +122,15 @@ def vis_parsing_maps(
         cv2.imwrite(save_path[:-4] + ".png", vis_parsing_anno)
         cv2.imwrite(save_path, vis_im, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
+    return pixel_array
     # return vis_im
 
 
 def evaluate(respth="./res/test_res", dspth="./data", cp="pretrained_model.pth"):
 
-    if not os.path.exists(respth):
-        os.makedirs(respth)
+    if os.path.exists(respth):
+        shutil.rmtree(respth)
+    os.makedirs(respth)
 
     base_dir = "/content/face_masking/"
     n_classes = 19
@@ -113,17 +161,22 @@ def evaluate(respth="./res/test_res", dspth="./data", cp="pretrained_model.pth")
             print(np.unique(parsing))
             print()
 
-            vis_parsing_maps(
+            # Create a subfolder with the same name as the input image
+            input_image_name = osp.splitext(image_path)[0]  # Remove the file extension
+            subfolder_path = osp.join(respth, input_image_name)
+            if not os.path.exists(subfolder_path):
+                os.makedirs(subfolder_path)
+
+            img_pixel_array = vis_parsing_maps(
                 image,
                 parsing,
                 stride=1,
                 save_im=True,
-                save_path=osp.join(respth, image_path),
+                save_path=osp.join(subfolder_path, image_path),
             )
 
 
 if __name__ == "__main__":
-    img_name = "img1.jpg"
     evaluate(
         dspth=f"/content/face_masking/data",
         cp="pretrained_model.pth",
