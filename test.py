@@ -254,6 +254,11 @@ def evaluate(respth="./res/test_res", dspth="./data", cp="pretrained_model.pth")
 
                 cv2.imwrite(osp.join(subfolder_path, f"ear_mask.png"), mask)
 
+            np.savetxt(osp.join(subfolder_path, 'skin_colors.txt'), skin_arr, fmt='%d')
+            np.savetxt(osp.join(subfolder_path, 'eye_colors.txt'), eye_arr, fmt='%d')
+            np.savetxt(osp.join(subfolder_path, 'lip_colors.txt'), lip_arr, fmt='%d')
+            np.savetxt(osp.join(subfolder_path, 'hair_colors.txt'), hair_arr, fmt='%d')
+
 
 
             # print("length: ", len(img_pixel_array))
